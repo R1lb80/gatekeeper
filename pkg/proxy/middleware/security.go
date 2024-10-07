@@ -104,6 +104,8 @@ func AdmissionMiddleware(
 	logger *zap.Logger,
 	resource *authorization.Resource,
 	matchClaims map[string]string,
+	redirectToAuthorization func(wrt http.ResponseWriter, req *http.Request) context.Context,
+	redirectToAuthorizationwithExtraQuery func(wrt http.ResponseWriter, req *http.Request,extraQuery map[string]string ) context.Context,
 	accessForbidden func(wrt http.ResponseWriter, req *http.Request) context.Context,
 ) func(http.Handler) http.Handler {
 	claimMatches := make(map[string]*regexp.Regexp)
@@ -188,6 +190,18 @@ func AdmissionMiddleware(
 					return
 				}
 			}
+
+			if len(resource.AcrValues) > 0 {
+				// step: if we have acr expected, lets validate the tokens has the acr otherwise redirect to authorize 
+				if !utils.CheckAcr(scope.Logger, user, resource.AcrValues, resource.URL) {
+					extraQuery := make(map[string]string)
+					extraQuery["acr_values"] = resource.AcrValues[0]
+					scope.Logger.Debug("redirecting with extra query",
+					zap.String("acr_values=",resource.AcrValues[0]))
+					redirectToAuthorizationwithExtraQuery(wrt, req, extraQuery)
+					return
+				}
+			}			
 
 			scope.Logger.Debug("access permitted to resource",
 				zap.String("access", "permitted"),

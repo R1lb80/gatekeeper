@@ -167,6 +167,39 @@ func GetRefreshedToken(
 		nil
 }
 
+// CheckAcr checks whether claim acr in userContext matches value.
+//
+//nolint:cyclop
+func CheckAcr(
+	logger *zap.Logger,
+	user *models.UserContext,
+	values []string,
+	resourceURL string,
+) bool {
+	errFields := []zapcore.Field{
+		zap.String("acr", strings.Join(values, ",")),
+		zap.String("access", "denied"),
+		zap.String("userID", user.ID),
+		zap.String("resource", resourceURL),
+	}
+
+	lLog := logger.With(errFields...)
+	if _, found := user.Claims["acr"]; !found {
+		lLog.Warn("the token does not have the claim acr")
+		return false
+	}
+
+	for _, value := range values {
+        if value == user.Claims["acr"] {
+			lLog.Warn("the token has one good acr claim")
+            return true
+        }
+    }
+	lLog.Warn("the token does not have one good acr claim")
+    return false
+}
+
+
 // CheckClaim checks whether claim in userContext matches claimName, match. It can be String or Strings claim.
 //
 //nolint:cyclop

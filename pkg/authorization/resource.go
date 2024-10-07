@@ -41,6 +41,8 @@ type Resource struct {
 	Roles []string `json:"roles" yaml:"roles"`
 	// Groups is a list of groups the user is in
 	Groups []string `json:"groups" yaml:"groups"`
+	// AcrValues is a list of acr to add in the auth url
+	AcrValues []string `json:"acr-values" yaml:"acr-values"`
 }
 
 func NewResource() *Resource {
@@ -66,7 +68,7 @@ func (r *Resource) Parse(resource string) (*Resource, error) {
 			return nil,
 				errors.New(
 					"invalid resource keypair, should be " +
-						"(uri|roles|headers|methods|white-listed)=comma_values",
+						"(uri|roles|headers|methods|white-listed|acr-values)=comma_values",
 				)
 		}
 
@@ -85,6 +87,8 @@ func (r *Resource) Parse(resource string) (*Resource, error) {
 					r.Methods = utils.AllHTTPMethods
 				}
 			}
+		case "acr-values":
+			r.AcrValues = strings.Split(keyPair[1], ",")
 		case "require-any-role":
 			val, err := strconv.ParseBool(keyPair[1])
 
@@ -165,6 +169,10 @@ func (r *Resource) Valid() error {
 func (r Resource) GetRoles() string {
 	return strings.Join(r.Roles, ",")
 }
+// GetAcrValues returns a list of Acr for this resource
+func (r Resource) GetAcrValues() string {
+	return strings.Join(r.AcrValues, ",")
+}
 
 // GetHeaders returns a list of headers for this resource
 func (r Resource) GetHeaders() string {
@@ -176,17 +184,20 @@ func (r Resource) String() string {
 	if r.WhiteListed {
 		return fmt.Sprintf("uri: %s, white-listed", r.URL)
 	}
-
+    acrs :=""
 	roles := "authentication only"
 	methods := constant.AnyMethod
 
 	if len(r.Roles) > 0 {
 		roles = strings.Join(r.Roles, ",")
 	}
+	if len(r.AcrValues) > 0 {
+		acrs = strings.Join(r.AcrValues, ",")
+	}
 
 	if len(r.Methods) > 0 {
 		methods = strings.Join(r.Methods, ",")
 	}
 
-	return fmt.Sprintf("uri: %s, methods: %s, required: %s", r.URL, methods, roles)
+	return fmt.Sprintf("uri: %s, methods: %s, required: %s,with acr :%s", r.URL, methods, roles,acrs)
 }

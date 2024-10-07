@@ -357,6 +357,18 @@ func (r *OauthProxy) CreateReverseProxy() error {
 		r.Config.DefaultAllowedQueryParams,
 	)
 
+	redToAuthwithExtraQuery := core.RedirectToAuthorizationwithExtraQuery(
+		r.Log,
+		r.Config.NoRedirects,
+		r.Cm,
+		r.Config.SkipTokenVerification,
+		r.Config.NoProxy,
+		r.Config.BaseURI,
+		r.Config.OAuthURI,
+		r.Config.AllowedQueryParams,
+		r.Config.DefaultAllowedQueryParams,
+	)
+
 	if r.Config.EnableHmac {
 		engine.Use(gmiddleware.HmacMiddleware(r.Log, r.Config.EncryptionKey))
 	}
@@ -646,6 +658,8 @@ func (r *OauthProxy) CreateReverseProxy() error {
 				r.Log,
 				res,
 				r.Config.MatchClaims,
+				redToAuth,
+				redToAuthwithExtraQuery,
 				accessForbidden,
 			),
 			gmiddleware.IdentityHeadersMiddleware(
@@ -699,6 +713,8 @@ func (r *OauthProxy) CreateReverseProxy() error {
 					r.Log,
 					res,
 					r.Config.MatchClaims,
+					redToAuth,
+					redToAuthwithExtraQuery,
 					accessForbidden,
 				),
 				gmiddleware.IdentityHeadersMiddleware(

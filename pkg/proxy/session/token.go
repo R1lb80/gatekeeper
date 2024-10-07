@@ -355,7 +355,7 @@ func GetCodeFlowTokens(
 		accessForbidden(writer, req)
 		return "", "", "", err
 	}
-
+	scope.Logger.Debug("Succeed to retrieve token with code", zap.String("token", resp.AccessToken))
 	return resp.AccessToken, idToken, resp.RefreshToken, nil
 }
 

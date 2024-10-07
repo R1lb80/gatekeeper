@@ -31,10 +31,13 @@ func RedirectToURL(
 	return revokeProxy(logger, req)
 }
 
-// RedirectToAuthorization redirects the user to authorization handler
-//
-//nolint:cyclop
-func RedirectToAuthorization(
+
+
+
+
+
+
+func RedirectToAuthorizationwithExtraQuery(
 	logger *zap.Logger,
 	noRedirects bool,
 	cookManager *cookie.Manager,
@@ -44,8 +47,8 @@ func RedirectToAuthorization(
 	oAuthURI string,
 	allowedQueryParams map[string]string,
 	defaultAllowedQueryParams map[string]string,
-) func(wrt http.ResponseWriter, req *http.Request) context.Context {
-	return func(wrt http.ResponseWriter, req *http.Request) context.Context {
+) func(wrt http.ResponseWriter, req *http.Request,extraQuery map[string]string ) context.Context {
+	return func(wrt http.ResponseWriter, req *http.Request,extraQuery map[string]string ) context.Context {
 		if noRedirects {
 			wrt.WriteHeader(http.StatusUnauthorized)
 			return revokeProxy(logger, req)
@@ -73,6 +76,13 @@ func RedirectToAuthorization(
 				}
 			}
 			authQuery += query
+		}
+		if len(extraQuery) > 0 {
+			xquery := ""
+			for key, val := range extraQuery {
+				xquery += fmt.Sprintf("&%s=%s", key, val)
+			}
+			authQuery += xquery
 		}
 
 		// step: if verification is switched off, we can't authorization
@@ -118,6 +128,26 @@ func RedirectToAuthorization(
 		)
 
 		return revokeProxy(logger, req)
+	}
+}
+
+// RedirectToAuthorization redirects the user to authorization handler
+//
+//nolint:cyclop
+func RedirectToAuthorization(
+	logger *zap.Logger,
+	noRedirects bool,
+	cookManager *cookie.Manager,
+	skipTokenVerification bool,
+	noProxy bool,
+	baseURI string,
+	oAuthURI string,
+	allowedQueryParams map[string]string,
+	defaultAllowedQueryParams map[string]string,
+) func(wrt http.ResponseWriter, req *http.Request) context.Context {
+	return func(wrt http.ResponseWriter, req *http.Request) context.Context {
+		extraQuery := make(map[string]string)
+		return RedirectToAuthorizationwithExtraQuery (logger ,	noRedirects ,cookManager ,skipTokenVerification ,noProxy ,baseURI ,oAuthURI ,allowedQueryParams ,defaultAllowedQueryParams ) (wrt, req, extraQuery)
 	}
 }
 

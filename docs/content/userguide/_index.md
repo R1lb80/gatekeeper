@@ -214,6 +214,35 @@ resources:
 
 If you have roles listed in some custom claim, please see [custom claim matching](#claim-matching)
 
+## ACR
+
+With ACR control, you can implement authentication factor control per uri and also step-up authentication, if your application has function that need different level of authentication.
+You should implement a authentictaion flow with LOA condition, and declare your ACR to LOA mapping in you IDP ( ie Keycloak for example).
+Go gatekeeper will enforce expected ACR and redirect accordingly if needed with 'acr_value=' in query Parameter.
+
+You can match ACR per uri and accept multiple ACR level per uri:
+
+```yaml
+resources:
+- uri: /admin*
+  methods:
+  - GET
+  # this will match expected acr with acr claim from token
+  # if acr claim value does not match one of the expected acr, GoGatekeeper will redirect user to IDP with acr_values=<expected acr value> query parameter 
+  acr-values:
+  - 2fa
+- uri: /info*
+  methods:
+  - GET
+  # You can specify multiple acceptable acr value to accept users with a low authent factor and  users with 2 factors of authentication
+  acr-values:
+  - passwd
+  - 2fa
+```
+
+If you have multiple acceptable ACR value for a ressource, GoGatekeeper will redirect to IDP with the first one in 'acr_values query' parameter
+Don't forget to ask for acr claim, in the scope list.
+
 ## Authentication flows
 
 You can use gatekeeper to protect APIs, frontend server applications, frontend client applications.
